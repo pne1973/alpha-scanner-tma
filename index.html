@@ -11,35 +11,21 @@
             --tg-theme-bg-color: #ffffff;
             --tg-theme-secondary-bg-color: #f4f4f7;
             --tg-theme-text-color: #000000;
-            --tg-theme-button-color: #2481cc;
         }
-
         body {
             background-color: var(--tg-theme-bg-color);
             color: var(--tg-theme-text-color);
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
             -webkit-user-select: none;
             user-select: none;
-            overflow-x: hidden;
         }
-
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
         .glass-card {
             background: var(--tg-theme-secondary-bg-color);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(0,0,0,0.05);
             border-radius: 20px;
+            border: 1px solid rgba(0,0,0,0.05);
         }
-
         .pulse-live { animation: pulse 2s infinite; }
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-
-        .signal-glow-high { box-shadow: 0 0 15px rgba(34, 197, 94, 0.1); }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
     </style>
 </head>
 <body class="p-4 pb-20">
@@ -52,135 +38,79 @@
                 <p class="text-[10px] font-bold uppercase tracking-widest opacity-60">Mercado em Tempo Real</p>
             </div>
         </div>
-        <div class="text-right">
-            <div class="glass-card px-3 py-1 text-[10px] font-bold border border-black/10">
-                v34.12-ALPHA
-            </div>
-        </div>
+        <div class="glass-card px-3 py-1 text-[10px] font-bold border border-black/10">v34.12-ALPHA</div>
     </header>
 
-    <nav class="flex gap-3 overflow-x-auto no-scrollbar mb-8">
-        <button class="bg-blue-600 text-white px-5 py-2 rounded-full text-xs font-bold shadow-lg">Todas</button>
-        <button class="glass-card px-5 py-2 rounded-full text-xs font-bold opacity-70">TON</button>
-        <button class="glass-card px-5 py-2 rounded-full text-xs font-bold opacity-70">Solana</button>
-        <button class="glass-card px-5 py-2 rounded-full text-xs font-bold opacity-70">BTC/ETH</button>
-    </nav>
-
     <main id="signals-list" class="space-y-5"></main>
-
-    <template id="signal-template">
-        <div class="glass-card p-5 signal-glow-high border-l-4">
-            <div class="flex justify-between items-start mb-4">
-                <div>
-                    <div class="flex items-center gap-2 mb-1">
-                        <span class="network-label text-[10px] font-black uppercase bg-black/5 px-2 py-0.5 rounded">REDES</span>
-                        <span class="text-[10px] opacity-50 font-bold">15M</span>
-                    </div>
-                    <h3 class="asset-name text-xl font-bold">---/---</h3>
-                </div>
-                <div class="text-right">
-                    <span class="score-value text-3xl font-black leading-none">00</span>
-                    <p class="text-[8px] font-bold uppercase opacity-40">Alpha Score</p>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-2 gap-3 mb-5">
-                <div class="bg-black/5 p-3 rounded-xl">
-                    <p class="text-[9px] uppercase opacity-50 font-bold mb-1">Análise Técnica</p>
-                    <p class="tech-indicator text-xs font-bold">---</p>
-                </div>
-                <div class="bg-black/5 p-3 rounded-xl">
-                    <p class="text-[9px] uppercase opacity-50 font-bold mb-1">Smart Money</p>
-                    <p class="whale-indicator text-xs font-bold text-blue-600">---</p>
-                </div>
-            </div>
-
-            <div class="flex items-center justify-between pt-2 border-t border-black/5">
-                <div>
-                    <p class="text-[9px] uppercase opacity-50 font-bold">Volume 24h</p>
-                    <p class="volume-value text-sm font-mono font-bold">---</p>
-                </div>
-                <button class="copy-btn bg-[#2481cc] text-white px-6 py-2 rounded-xl text-xs font-bold active:scale-95 transition-transform">
-                    Copiar CA
-                </button>
-            </div>
-        </div>
-    </template>
 
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
-        tg.ready();
 
         const mockSignals = [
             { pair: "TON / USDT", network: "TON", score: 96, tech: "RSI 24 (Oversold)", whale: "7 Baleias Ativas", volume: "$12.4M", color: "#0088cc", ca: "EQB...ton-contract" },
-            { pair: "SOL / USDC", network: "Solana", score: 88, tech: "Golden Cross (1H)", whale: "Fluxo Institucional", volume: "$840M", color: "#14f195", ca: "EPj...sol-contract" },
-            { pair: "BTC / USDT", network: "Bitcoin", score: 74, tech: "Suporte Semanal", whale: "Acumulação On-chain", volume: "$24.1B", color: "#f7931a", ca: "N/A" }
+            { pair: "SOL / USDC", network: "Solana", score: 88, tech: "Golden Cross (1H)", whale: "Fluxo Institucional", volume: "$840M", color: "#14f195", ca: "EPj...sol-contract" }
         ];
 
-        async function copyToClipboard(text) {
-            if (text === "N/A") {
-                tg.showAlert("Endereço de contrato não disponível.");
-                return;
-            }
+        function copyAction(btn, text) {
+            // Feedback Visual Imediato
+            const originalText = btn.innerText;
+            btn.innerText = "COPIADO!";
+            btn.style.backgroundColor = "#22c55e";
 
+            // Tentativa de Cópia
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            document.body.appendChild(textArea);
+            textArea.select();
             try {
-                // Tentativa 1: API Moderna
-                await navigator.clipboard.writeText(text);
-                handleCopySuccess();
+                document.execCommand('copy');
+                if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+                tg.showAlert("Contrato copiado: " + text);
             } catch (err) {
-                // Tentativa 2: Fallback Clássico
-                try {
-                    const textArea = document.createElement("textarea");
-                    textArea.value = text;
-                    document.body.appendChild(textArea);
-                    textArea.select();
-                    document.execCommand('copy');
-                    document.body.removeChild(textArea);
-                    handleCopySuccess();
-                } catch (fallbackErr) {
-                    tg.showAlert("Erro ao copiar. Por favor, tente novamente.");
-                }
+                console.error("Erro ao copiar", err);
             }
+            document.body.removeChild(textArea);
+
+            // Resetar botão após 2 segundos
+            setTimeout(() => {
+                btn.innerText = originalText;
+                btn.style.backgroundColor = "#2481cc";
+            }, 2000);
         }
 
-        function handleCopySuccess() {
-            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-            tg.showAlert("Copiado!");
-        }
-
-        function renderSignals() {
+        function render() {
             const container = document.getElementById('signals-list');
-            const template = document.getElementById('signal-template');
-            container.innerHTML = '';
-
-            mockSignals.forEach(signal => {
-                const clone = template.content.cloneNode(true);
-                const card = clone.querySelector('.glass-card');
-                
-                card.style.borderLeftColor = signal.color;
-                clone.querySelector('.asset-name').textContent = signal.pair;
-                clone.querySelector('.network-label').textContent = signal.network;
-                
-                const scoreTag = clone.querySelector('.score-value');
-                scoreTag.textContent = signal.score;
-                scoreTag.style.color = signal.score > 85 ? '#22c55e' : (signal.score > 70 ? '#eab308' : '#6b7280');
-                
-                clone.querySelector('.tech-indicator').textContent = signal.tech;
-                clone.querySelector('.whale-indicator').textContent = signal.whale;
-                clone.querySelector('.volume-value').textContent = signal.volume;
-
-                clone.querySelector('.copy-btn').addEventListener('click', () => copyToClipboard(signal.ca));
-
-                container.appendChild(clone);
-            });
+            container.innerHTML = mockSignals.map(s => `
+                <div class="glass-card p-5 border-l-4" style="border-left-color: ${s.color}">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <span class="text-[10px] font-black uppercase bg-black/5 px-2 py-0.5 rounded">${s.network}</span>
+                            <h3 class="text-xl font-bold mt-1">${s.pair}</h3>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-3xl font-black" style="color: ${s.score > 85 ? '#22c55e' : '#eab308'}">${s.score}</span>
+                            <p class="text-[8px] font-bold opacity-40">ALPHA SCORE</p>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3 mb-5 text-xs font-bold">
+                        <div class="bg-black/5 p-3 rounded-xl"><p class="opacity-50 text-[9px] mb-1">TÉCNICO</p>${s.tech}</div>
+                        <div class="bg-black/5 p-3 rounded-xl"><p class="opacity-50 text-[9px] mb-1">WHALES</p><span class="text-blue-600">${s.whale}</span></div>
+                    </div>
+                    <div class="flex items-center justify-between pt-2 border-t border-black/5">
+                        <p class="text-sm font-mono font-bold">${s.volume}</p>
+                        <button onclick="copyAction(this, '${s.ca}')" class="bg-[#2481cc] text-white px-6 py-2 rounded-xl text-xs font-bold active:scale-95">
+                            Copiar CA
+                        </button>
+                    </div>
+                </div>
+            `).join('');
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            renderSignals();
-            const user = tg.initDataUnsafe?.user;
-            if (user?.first_name) {
-                document.getElementById('user-greeting').textContent = `Olá, ${user.first_name}`;
+            render();
+            if (tg.initDataUnsafe?.user?.first_name) {
+                document.getElementById('user-greeting').textContent = `Olá, ${tg.initDataUnsafe.user.first_name}`;
             }
         });
     </script>
