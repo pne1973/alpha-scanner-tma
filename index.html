@@ -12,7 +12,6 @@
             --tg-theme-secondary-bg-color: #f4f4f7;
             --tg-theme-text-color: #000000;
             --tg-theme-button-color: #2481cc;
-            --tg-theme-hint-color: #999999;
         }
 
         body {
@@ -34,17 +33,13 @@
             border-radius: 20px;
         }
 
-        .pulse-live {
-            animation: pulse 2s infinite;
-        }
-
+        .pulse-live { animation: pulse 2s infinite; }
         @keyframes pulse {
-            0% { opacity: 1; }
+            0%, 100% { opacity: 1; }
             50% { opacity: 0.5; }
-            100% { opacity: 1; }
         }
 
-        .signal-glow-high { box-shadow: 0 0 15px rgba(34, 197, 94, 0.2); }
+        .signal-glow-high { box-shadow: 0 0 15px rgba(34, 197, 94, 0.1); }
     </style>
 </head>
 <body class="p-4 pb-20">
@@ -65,14 +60,13 @@
     </header>
 
     <nav class="flex gap-3 overflow-x-auto no-scrollbar mb-8">
-        <button class="bg-blue-600 text-white px-5 py-2 rounded-full text-xs font-bold shadow-lg transition-all">Todas</button>
+        <button class="bg-blue-600 text-white px-5 py-2 rounded-full text-xs font-bold shadow-lg">Todas</button>
         <button class="glass-card px-5 py-2 rounded-full text-xs font-bold opacity-70">TON</button>
         <button class="glass-card px-5 py-2 rounded-full text-xs font-bold opacity-70">Solana</button>
         <button class="glass-card px-5 py-2 rounded-full text-xs font-bold opacity-70">BTC/ETH</button>
     </nav>
 
-    <main id="signals-list" class="space-y-5">
-        </main>
+    <main id="signals-list" class="space-y-5"></main>
 
     <template id="signal-template">
         <div class="glass-card p-5 signal-glow-high border-l-4">
@@ -80,7 +74,7 @@
                 <div>
                     <div class="flex items-center gap-2 mb-1">
                         <span class="network-label text-[10px] font-black uppercase bg-black/5 px-2 py-0.5 rounded">REDES</span>
-                        <span class="timeframe-label text-[10px] opacity-50 font-bold">15M</span>
+                        <span class="text-[10px] opacity-50 font-bold">15M</span>
                     </div>
                     <h3 class="asset-name text-xl font-bold">---/---</h3>
                 </div>
@@ -118,74 +112,72 @@
         tg.expand();
         tg.ready();
 
-        // Dados Simulados (Em produção, viriam da sua API na Vercel)
         const mockSignals = [
-            {
-                pair: "TON / USDT",
-                network: "TON",
-                score: 96,
-                tech: "RSI 24 (Oversold)",
-                whale: "7 Baleias Ativas",
-                volume: "$12.4M",
-                color: "#0088cc",
-                ca: "EQB...ton-contract"
-            },
-            {
-                pair: "SOL / USDC",
-                network: "Solana",
-                score: 88,
-                tech: "Golden Cross (1H)",
-                whale: "Fluxo Institucional",
-                volume: "$840M",
-                color: "#14f195",
-                ca: "EPj...sol-contract"
-            },
-            {
-                pair: "BTC / USDT",
-                network: "Bitcoin",
-                score: 74,
-                tech: "Suporte Semanal",
-                whale: "Acumulação On-chain",
-                volume: "$24.1B",
-                color: "#f7931a",
-                ca: "N/A"
-            }
+            { pair: "TON / USDT", network: "TON", score: 96, tech: "RSI 24 (Oversold)", whale: "7 Baleias Ativas", volume: "$12.4M", color: "#0088cc", ca: "EQB...ton-contract" },
+            { pair: "SOL / USDC", network: "Solana", score: 88, tech: "Golden Cross (1H)", whale: "Fluxo Institucional", volume: "$840M", color: "#14f195", ca: "EPj...sol-contract" },
+            { pair: "BTC / USDT", network: "Bitcoin", score: 74, tech: "Suporte Semanal", whale: "Acumulação On-chain", volume: "$24.1B", color: "#f7931a", ca: "N/A" }
         ];
+
+        async function copyToClipboard(text) {
+            if (text === "N/A") {
+                tg.showAlert("Endereço de contrato não disponível.");
+                return;
+            }
+
+            try {
+                // Tentativa 1: API Moderna
+                await navigator.clipboard.writeText(text);
+                handleCopySuccess();
+            } catch (err) {
+                // Tentativa 2: Fallback Clássico
+                try {
+                    const textArea = document.createElement("textarea");
+                    textArea.value = text;
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    handleCopySuccess();
+                } catch (fallbackErr) {
+                    tg.showAlert("Erro ao copiar. Por favor, tente novamente.");
+                }
+            }
+        }
+
+        function handleCopySuccess() {
+            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+            tg.showAlert("Copiado!");
+        }
 
         function renderSignals() {
             const container = document.getElementById('signals-list');
             const template = document.getElementById('signal-template');
+            container.innerHTML = '';
 
             mockSignals.forEach(signal => {
                 const clone = template.content.cloneNode(true);
+                const card = clone.querySelector('.glass-card');
                 
-                // Preenchimento de dados
-                clone.querySelector('.glass-card').style.borderLeftColor = signal.color;
+                card.style.borderLeftColor = signal.color;
                 clone.querySelector('.asset-name').textContent = signal.pair;
                 clone.querySelector('.network-label').textContent = signal.network;
-                clone.querySelector('.score-value').textContent = signal.score;
-                clone.querySelector('.score-value').style.color = signal.score > 85 ? '#22c55e' : (signal.score > 70 ? '#eab308' : '#6b7280');
+                
+                const scoreTag = clone.querySelector('.score-value');
+                scoreTag.textContent = signal.score;
+                scoreTag.style.color = signal.score > 85 ? '#22c55e' : (signal.score > 70 ? '#eab308' : '#6b7280');
+                
                 clone.querySelector('.tech-indicator').textContent = signal.tech;
                 clone.querySelector('.whale-indicator').textContent = signal.whale;
                 clone.querySelector('.volume-value').textContent = signal.volume;
 
-                // Evento de Cópia
-                clone.querySelector('.copy-btn').onclick = () => {
-                    navigator.clipboard.writeText(signal.ca);
-                    tg.HapticFeedback.notificationOccurred('success');
-                    tg.showScanQrPopup({ text: "Contrato Copiado para o Clipboard!" });
-                    setTimeout(() => tg.closeScanQrPopup(), 1500);
-                };
+                clone.querySelector('.copy-btn').addEventListener('click', () => copyToClipboard(signal.ca));
 
                 container.appendChild(clone);
             });
         }
 
-        // Inicializar Dashboard
         document.addEventListener('DOMContentLoaded', () => {
             renderSignals();
-            
-            // Personalização básica com nome do utilizador do Telegram
             const user = tg.initDataUnsafe?.user;
             if (user?.first_name) {
                 document.getElementById('user-greeting').textContent = `Olá, ${user.first_name}`;
